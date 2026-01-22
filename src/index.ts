@@ -8,7 +8,7 @@ import logger from './utils/logger.js';
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = parseInt(process.env.PORT || '3000', 10);
 
 // Middleware
 app.use(cors());
@@ -26,6 +26,6 @@ app.use('/api/v1/bug-reports', bugReportRoutes);
 app.use(errorHandler);
 
 // Start server
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
     logger.info(`Bug Report Service running on port ${PORT}`);
 });
