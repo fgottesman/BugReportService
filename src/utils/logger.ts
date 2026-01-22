@@ -30,25 +30,7 @@ const logger = winston.createLogger({
     ]
 });
 
-// Production logging to files
-if (process.env.NODE_ENV === 'production') {
-    logger.add(new winston.transports.File({
-        filename: 'error.log',
-        level: 'error',
-        format: combine(
-            timestamp(),
-            errors({ stack: true }),
-            json()
-        )
-    }));
-
-    logger.add(new winston.transports.File({
-        filename: 'combined.log',
-        format: combine(
-            timestamp(),
-            json()
-        )
-    }));
-}
+// In production on platforms like Railway, logs go to stdout
+// No file transports needed - Railway captures console output
 
 export default logger;
