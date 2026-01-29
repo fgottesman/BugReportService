@@ -9,6 +9,12 @@ export interface AuthRequest extends Request {
 
 export const authenticate = async (req: Request, res: Response, next: NextFunction) => {
     try {
+        // Allow admin API key for internal operations
+        const adminKey = req.headers['x-admin-key'];
+        if (adminKey && process.env.ADMIN_API_KEY && adminKey === process.env.ADMIN_API_KEY) {
+            return next();
+        }
+
         const authHeader = req.headers.authorization;
         if (!authHeader || !authHeader.startsWith('Bearer ')) {
             return res.status(401).json({ error: 'Unauthorized: Missing or invalid token' });
