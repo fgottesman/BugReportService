@@ -34,7 +34,7 @@ export class BugReportController {
         sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
         const { data } = await supabase
-            .from('bug_reports')
+            .from('ghp_bug_reports')
             .select('id')
             .eq('fingerprint', fingerprint)
             .eq('app_id', appId)
@@ -121,13 +121,13 @@ export class BugReportController {
 
             // Insert bug report
             const { data, error } = await supabase
-                .from('bug_reports')
+                .from('ghp_bug_reports')
                 .insert({
                     app_id: appId,
                     user_id: userId,
                     description: description.trim(),
                     priority,
-                    status: existingCanonicalId ? 'duplicate' : 'new',
+                    status: existingCanonicalId ? 'duplicate' : 'open',
                     screenshot_url: screenshotUrl,
                     app_version: appVersion || null,
                     build_number: buildNumber || null,
@@ -194,7 +194,7 @@ export class BugReportController {
             }
 
             let query = supabase
-                .from('bug_reports')
+                .from('ghp_bug_reports')
                 .select('*')
                 .eq('app_id', appId)
                 .is('canonical_id', null) // Only return canonical reports (not duplicates)
@@ -237,7 +237,7 @@ export class BugReportController {
             const { id } = req.params;
 
             const { data, error } = await supabase
-                .from('bug_reports')
+                .from('ghp_bug_reports')
                 .select('*')
                 .eq('id', id)
                 .single();
@@ -276,7 +276,7 @@ export class BugReportController {
             }
 
             const { data, error } = await supabase
-                .from('bug_reports')
+                .from('ghp_bug_reports')
                 .update(updates)
                 .eq('id', id)
                 .select()
@@ -306,7 +306,7 @@ export class BugReportController {
             const { id } = req.params;
 
             const { data, error } = await supabase
-                .from('bug_reports')
+                .from('ghp_bug_reports')
                 .select('*')
                 .eq('canonical_id', id)
                 .order('created_at', { ascending: false });
@@ -338,7 +338,7 @@ export class BugReportController {
 
             // Get counts by status
             const { data: statusCounts, error: statusError } = await supabase
-                .from('bug_reports')
+                .from('ghp_bug_reports')
                 .select('status')
                 .eq('app_id', appId)
                 .is('canonical_id', null);
@@ -347,7 +347,7 @@ export class BugReportController {
 
             // Get counts by priority
             const { data: priorityCounts, error: priorityError } = await supabase
-                .from('bug_reports')
+                .from('ghp_bug_reports')
                 .select('priority')
                 .eq('app_id', appId)
                 .is('canonical_id', null);
