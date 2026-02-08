@@ -1,9 +1,22 @@
--- Migration: Add bug_reports table for multi-tenant bug reporting
+-- Migration: Original bug_reports table for multi-tenant bug reporting
 -- Created: 2026-01-22
 -- Purpose: Supports reusable ShakeReporter Swift Package across multiple apps
+--
+-- !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+-- DEPRECATED: This migration is HISTORICAL ONLY.
+-- As of 2026-02-08, the `bug_reports` table was merged into the
+-- unified `ghp_bug_reports` table in the shared GHP Labs Supabase
+-- project. The old `bug_reports` table has been dropped.
+--
+-- The `ghp_bug_reports` schema is managed by the central GHP Labs
+-- migration set. Do NOT run this migration on new environments.
+--
+-- Status values changed: 'new' -> 'open', 'investigating' removed.
+-- Valid statuses: 'open', 'in_progress', 'resolved', 'wont_fix', 'duplicate'
+-- !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 -- ============================================
--- BUG REPORTS TABLE (Multi-tenant)
+-- BUG REPORTS TABLE (Multi-tenant) — DEPRECATED, see note above
 -- ============================================
 CREATE TABLE IF NOT EXISTS public.bug_reports (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

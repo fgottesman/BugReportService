@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 // Bug Report Schemas (ShakeReporter)
 const BugReportPriorityEnum = z.enum(['low', 'medium', 'high']);
-const BugReportStatusEnum = z.enum(['new', 'investigating', 'in_progress', 'resolved', 'wont_fix', 'duplicate']);
+const BugReportStatusEnum = z.enum(['open', 'in_progress', 'resolved', 'wont_fix', 'duplicate']);
 const FixStatusEnum = z.enum(['pending', 'accepted', 'rejected', 'implemented']);
 
 export const SubmitBugReportSchema = z.object({
