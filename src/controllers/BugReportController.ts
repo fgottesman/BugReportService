@@ -48,11 +48,43 @@ export class BugReportController {
     }
 
     /**
+     * Upload a single screenshot and return the URL
+     */
+    private static async uploadScreenshot(appId: string, base64Data: string): Promise<string | null> {
+        try {
+            const buffer = Buffer.from(base64Data, 'base64');
+            const fileName = `${appId}/${Date.now()}-${crypto.randomBytes(8).toString('hex')}.png`;
+
+            const { error: uploadError } = await supabase
+                .storage
+                .from('bug-screenshots')
+                .upload(fileName, buffer, {
+                    contentType: 'image/png',
+                    upsert: false
+                });
+
+            if (uploadError) {
+                logger.warn('Screenshot upload failed', { error: uploadError.message });
+                return null;
+            }
+
+            const { data: urlData } = supabase
+                .storage
+                .from('bug-screenshots')
+                .getPublicUrl(fileName);
+            return urlData.publicUrl;
+        } catch (uploadErr: any) {
+            logger.warn('Screenshot processing failed', { error: uploadErr.message });
+            return null;
+        }
+    }
+
+    /**
      * POST /api/v1/bug-reports
      * Submit a new bug report
      *
      * Required: appId, description, priority
-     * Optional: userId (from auth), screenshot, device metadata
+     * Optional: userId (from auth), screenshots (array or single), device metadata
      */
     static async submitBugReport(req: Request, res: Response) {
         let bugReportId: string | undefined;
@@ -61,7 +93,8 @@ export class BugReportController {
                 appId,
                 description,
                 priority,
-                screenshotBase64,
+                screenshotBase64,      // Legacy: single screenshot
+                screenshotBase64s,     // New: array of screenshots
                 appVersion,
                 buildNumber,
                 iosVersion,
@@ -89,35 +122,28 @@ export class BugReportController {
             // Check for duplicates
             const existingCanonicalId = await BugReportController.findDuplicate(fingerprint, appId);
 
-            let screenshotUrl: string | null = null;
-
-            // Handle screenshot upload if provided
-            if (screenshotBase64) {
-                try {
-                    const buffer = Buffer.from(screenshotBase64, 'base64');
-                    const fileName = `${appId}/${Date.now()}-${crypto.randomBytes(8).toString('hex')}.png`;
-
-                    const { data: uploadData, error: uploadError } = await supabase
-                        .storage
-                        .from('bug-screenshots')
-                        .upload(fileName, buffer, {
-                            contentType: 'image/png',
-                            upsert: false
-                        });
-
-                    if (uploadError) {
-                        logger.warn('Screenshot upload failed', { error: uploadError.message });
-                    } else {
-                        const { data: urlData } = supabase
-                            .storage
-                            .from('bug-screenshots')
-                            .getPublicUrl(fileName);
-                        screenshotUrl = urlData.publicUrl;
+            // Handle screenshot uploads - support both array and single (legacy)
+            const screenshotUrls: string[] = [];
+            
+            // Process array of screenshots (new format)
+            if (screenshotBase64s && Array.isArray(screenshotBase64s)) {
+                for (const base64 of screenshotBase64s) {
+                    if (typeof base64 === 'string' && base64.length > 0) {
+                        const url = await BugReportController.uploadScreenshot(appId, base64);
+                        if (url) screenshotUrls.push(url);
                     }
-                } catch (uploadErr: any) {
-                    logger.warn('Screenshot processing failed', { error: uploadErr.message });
                 }
             }
+            // Legacy single screenshot fallback
+            else if (screenshotBase64 && typeof screenshotBase64 === 'string') {
+                const url = await BugReportController.uploadScreenshot(appId, screenshotBase64);
+                if (url) screenshotUrls.push(url);
+            }
+
+            // For backward compatibility: first URL goes in screenshot_url
+            const primaryScreenshotUrl = screenshotUrls.length > 0 ? screenshotUrls[0] : null;
+            // Store all URLs as JSON array in screenshot_urls (if column exists, otherwise we store in screenshot_url as JSON)
+            const allScreenshotUrls = screenshotUrls.length > 0 ? screenshotUrls : null;
 
             // Insert bug report
             const { data, error } = await supabase
@@ -128,7 +154,8 @@ export class BugReportController {
                     description: description.trim(),
                     priority,
                     status: existingCanonicalId ? 'duplicate' : 'open',
-                    screenshot_url: screenshotUrl,
+                    screenshot_url: primaryScreenshotUrl,
+                    screenshot_urls: allScreenshotUrls,  // Array column for multiple screenshots
                     app_version: appVersion || null,
                     build_number: buildNumber || null,
                     ios_version: iosVersion || null,
@@ -153,14 +180,16 @@ export class BugReportController {
                     bugReportId,
                     canonicalId: existingCanonicalId,
                     appId,
-                    userId
+                    userId,
+                    screenshotCount: screenshotUrls.length
                 });
             } else {
                 logger.info('Bug report submitted', {
                     bugReportId,
                     appId,
                     priority,
-                    userId
+                    userId,
+                    screenshotCount: screenshotUrls.length
                 });
             }
 
@@ -170,7 +199,8 @@ export class BugReportController {
                     id: data.id,
                     status: data.status,
                     isDuplicate: !!existingCanonicalId,
-                    canonicalId: existingCanonicalId
+                    canonicalId: existingCanonicalId,
+                    screenshotCount: screenshotUrls.length
                 }
             });
         } catch (error: any) {
