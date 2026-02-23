@@ -12,6 +12,8 @@ export const SubmitBugReportSchema = z.object({
         priority: BugReportPriorityEnum,
         // Max 5MB image = ~6.67MB base64 string
         screenshotBase64: z.string().max(7000000, 'Screenshot too large (max 5MB)').optional(),
+        // Array of screenshots (max 5 images)
+        screenshotBase64s: z.array(z.string().max(7000000, 'Screenshot too large (max 5MB)')).max(5, 'Maximum 5 screenshots').optional(),
         appVersion: z.string().max(50).optional(),
         buildNumber: z.string().max(50).optional(),
         iosVersion: z.string().max(50).optional(),

@@ -145,26 +145,33 @@ export class BugReportController {
             // Store all URLs as JSON array in screenshot_urls (if column exists, otherwise we store in screenshot_url as JSON)
             const allScreenshotUrls = screenshotUrls.length > 0 ? screenshotUrls : null;
 
+            // Build insert payload — only include screenshot_urls when we have URLs
+            // (column may not exist if migration 002_screenshot_urls.sql hasn't been applied)
+            const insertPayload: Record<string, any> = {
+                app_id: appId,
+                user_id: userId,
+                description: description.trim(),
+                priority,
+                status: existingCanonicalId ? 'duplicate' : 'open',
+                screenshot_url: primaryScreenshotUrl,
+                app_version: appVersion || null,
+                build_number: buildNumber || null,
+                ios_version: iosVersion || null,
+                device_model: deviceModel || null,
+                screen_name: screenName || null,
+                fingerprint,
+                canonical_id: existingCanonicalId || null,
+                duplicate_count: existingCanonicalId ? 0 : 1
+            };
+
+            if (allScreenshotUrls) {
+                insertPayload.screenshot_urls = allScreenshotUrls;
+            }
+
             // Insert bug report
             const { data, error } = await supabase
                 .from('ghp_bug_reports')
-                .insert({
-                    app_id: appId,
-                    user_id: userId,
-                    description: description.trim(),
-                    priority,
-                    status: existingCanonicalId ? 'duplicate' : 'open',
-                    screenshot_url: primaryScreenshotUrl,
-                    screenshot_urls: allScreenshotUrls,  // Array column for multiple screenshots
-                    app_version: appVersion || null,
-                    build_number: buildNumber || null,
-                    ios_version: iosVersion || null,
-                    device_model: deviceModel || null,
-                    screen_name: screenName || null,
-                    fingerprint,
-                    canonical_id: existingCanonicalId || null,
-                    duplicate_count: existingCanonicalId ? 0 : 1
-                })
+                .insert(insertPayload)
                 .select()
                 .single();
 
