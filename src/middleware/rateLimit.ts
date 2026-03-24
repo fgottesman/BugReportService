@@ -16,3 +16,16 @@ export const bugReportLimiter = rateLimit({
     },
     validate: { xForwardedForHeader: false }
 });
+
+// Rate limit for idea submissions
+export const ideaLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    limit: 3,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: {
+        error: 'Too many submissions. Please wait a minute.'
+    },
+    keyGenerator: (req) => req.ip || 'anonymous',
+    validate: { xForwardedForHeader: false }
+});

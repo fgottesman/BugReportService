@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import bugReportRoutes from './routes/bugReportRoutes.js';
+import ideaRoutes from './routes/ideaRoutes.js';
 import { errorHandler } from './middleware/error.js';
 import logger from './utils/logger.js';
 
@@ -22,6 +23,7 @@ app.get('/health', (req, res) => {
 
 // Routes
 app.use('/api/v1/bug-reports', bugReportRoutes);
+app.use('/api/v1/ideas', ideaRoutes);
 
 // Error handler
 app.use(errorHandler);

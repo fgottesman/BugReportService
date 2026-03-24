@@ -32,6 +32,14 @@ export const GetBugReportsSchema = z.object({
     })
 });
 
+// App Idea Schema (ghplabs.ai website)
+export const SubmitIdeaSchema = z.object({
+    body: z.object({
+        email: z.string().email('Valid email is required').max(200),
+        idea: z.string().min(10, 'Idea must be at least 10 characters').max(2000),
+    })
+});
+
 export const UpdateBugReportSchema = z.object({
     params: z.object({
         id: z.string().uuid('Invalid bug report ID')
